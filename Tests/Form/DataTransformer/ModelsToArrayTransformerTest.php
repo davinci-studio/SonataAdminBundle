@@ -12,7 +12,6 @@
 namespace Sonata\AdminBundle\Tests\Form\DataTransformer;
 
 use Doctrine\Common\Collections\ArrayCollection;
-use Sonata\AdminBundle\Form\ChoiceList\ModelChoiceList;
 use Sonata\AdminBundle\Form\DataTransformer\ModelsToArrayTransformer;
 use Sonata\AdminBundle\Tests\Fixtures\Entity\Form\FooEntity;
 
@@ -21,6 +20,7 @@ use Sonata\AdminBundle\Tests\Fixtures\Entity\Form\FooEntity;
  */
 class ModelsToArrayTransformerTest extends \PHPUnit_Framework_TestCase
 {
+    private $choiceList;
     private $modelChoiceList;
 
     private $modelManager;
@@ -30,9 +30,17 @@ class ModelsToArrayTransformerTest extends \PHPUnit_Framework_TestCase
      */
     public function setUp()
     {
-        $this->modelChoiceList = $this->getMockBuilder('Sonata\AdminBundle\Form\ChoiceList\ModelChoiceList')
+        $this->modelChoiceList = $this->getMockBuilder('Symfony\Component\Form\ChoiceList\ChoiceListInterface')
             ->disableOriginalConstructor()
             ->getMock();
+
+        $this->choiceList = $this->getMockBuilder('Symfony\Component\Form\ChoiceList\LegacyChoiceListAdapter')
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $this->choiceList->expects($this->once())
+            ->method('getAdaptedList')
+            ->will($this->returnValue($this->modelChoiceList));
 
         $this->modelManager = $this->getMock('Sonata\AdminBundle\Model\ModelManagerInterface');
 
@@ -51,7 +59,7 @@ class ModelsToArrayTransformerTest extends \PHPUnit_Framework_TestCase
      */
     public function testTransform($expected, $collection, $identifiers)
     {
-        $transformer = new ModelsToArrayTransformer($this->modelChoiceList);
+        $transformer = new ModelsToArrayTransformer($this->choiceList);
 
         $this->modelChoiceList->expects($this->any())
             ->method('getIdentifierValues')
@@ -93,7 +101,7 @@ class ModelsToArrayTransformerTest extends \PHPUnit_Framework_TestCase
     {
         $this->setExpectedException('Symfony\Component\Form\Exception\UnexpectedTypeException', 'Expected argument of type "\ArrayAccess", "NULL" given');
 
-        $transformer = new ModelsToArrayTransformer($this->modelChoiceList);
+        $transformer = new ModelsToArrayTransformer($this->choiceList);
 
         $this->modelManager->expects($this->any())
             ->method('getModelCollectionInstance')
@@ -106,7 +114,7 @@ class ModelsToArrayTransformerTest extends \PHPUnit_Framework_TestCase
     {
         $this->setExpectedException('Symfony\Component\Form\Exception\UnexpectedTypeException', 'Expected argument of type "array", "integer" given');
 
-        $transformer = new ModelsToArrayTransformer($this->modelChoiceList);
+        $transformer = new ModelsToArrayTransformer($this->choiceList);
 
         $this->modelManager->expects($this->any())
             ->method('getModelCollectionInstance')
@@ -120,7 +128,7 @@ class ModelsToArrayTransformerTest extends \PHPUnit_Framework_TestCase
      */
     public function testReverseTransformEmpty($keys)
     {
-        $transformer = new ModelsToArrayTransformer($this->modelChoiceList);
+        $transformer = new ModelsToArrayTransformer($this->choiceList);
 
         $this->modelManager->expects($this->any())
             ->method('getModelCollectionInstance')
@@ -139,7 +147,7 @@ class ModelsToArrayTransformerTest extends \PHPUnit_Framework_TestCase
 
     public function testReverseTransform()
     {
-        $transformer = new ModelsToArrayTransformer($this->modelChoiceList);
+        $transformer = new ModelsToArrayTransformer($this->choiceList);
 
         $this->modelManager->expects($this->any())
             ->method('getModelCollectionInstance')
@@ -176,7 +184,7 @@ class ModelsToArrayTransformerTest extends \PHPUnit_Framework_TestCase
     {
         $this->setExpectedException('Symfony\Component\Form\Exception\TransformationFailedException', 'The entities with keys "nonexistent" could not be found');
 
-        $transformer = new ModelsToArrayTransformer($this->modelChoiceList);
+        $transformer = new ModelsToArrayTransformer($this->choiceList);
 
         $this->modelManager->expects($this->any())
             ->method('getModelCollectionInstance')
